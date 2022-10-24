@@ -1,12 +1,27 @@
 using Microsoft.Extensions.FileProviders;
+using WebApi.Hubs;
 
 var builder = WebApplication.CreateBuilder(args);
+
 
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+builder.Services.AddSignalR();
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(name: "MyAllowedOrigins", builder =>
+    {
+        builder
+        .WithOrigins("http://localhost:4000/")
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials()
+        .SetIsOriginAllowed((host) => true);
+    });
+});
 
 var app = builder.Build();
 
@@ -27,9 +42,20 @@ app.UseStaticFiles(new StaticFileOptions()
 
 app.UseHttpsRedirection();
 
+app.UseCors("MyAllowedOrigins");
+
+app.UseRouting();
+
 app.UseAuthorization();
 
-app.UseStaticFiles();
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapHub<MessageHub>("/offers");
+    endpoints.MapControllers();
+});
+app.UseHttpsRedirection();
+
+//app.UseStaticFiles();
 
 app.MapControllers();
 
